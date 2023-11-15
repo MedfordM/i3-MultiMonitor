@@ -83,7 +83,6 @@ fn parse_workspace_monitor(connection: &mut I3Connection, binding: &BindingEvent
     } else {
         println!("User requested to switch to workspace {} on monitor {}", key, active_monitor);
         command = String::from("workspace ");
-        update_eww_workspaces(requested_space);
     }
 
     println!("Workspaces on {}: {:?}", active_monitor, workspaces_on_monitor);
@@ -110,4 +109,8 @@ fn parse_workspace_monitor(connection: &mut I3Connection, binding: &BindingEvent
     println!("Command: {}", final_command);
     let result = connection.run_command(final_command);
     println!("Result: {:?}", result);
+
+    if result.is_ok() && !mods.contains(&String::from("shift")) {
+        update_eww_workspaces(requested_space);
+    }
 }
