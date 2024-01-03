@@ -1,19 +1,43 @@
 # i3-MultiMonitor
 A simple Rust application to adjust how the i3 window manager handles workspaces on multiple monitors
 
-#### About
-i3-MultiMonitor implements the IPC api of the i3 window manager to intercept workspace related keybinds and adjusts them to be monitor specific. More specifically, if your keybind is workspace specific, it will intercept the keybind command and replace the specified workspace with the appropriate workspace for the currently focused monitor.
+## About
+i3-MultiMonitor implements the IPC api of the i3 window manager to intercept workspace related keybinds and adjust them to be monitor dependent.
+More specifically, it will intercept the workspace keybind sent by the user and replace the specified workspace with the i3 recognized workspace for the currently focused monitor.
 
-For example, if you have workspace 1 on monitor 1, workspace 2 on monitor 2, and request to switch to workspace 1 on monitor 2, this application will adjust your keybind command to switch to workspace 11 on monitor 2. This is an adaptation of the normal i3 behavior, which would have moved focus to monitor 1 and switched to workspace 1 if it was not currently focused.
+This enables the user to have one set of keybinds to interact with what is effectively an independent set of workspaces per monitor 
 
-The end result is an IPC implementation of monitor specific workspaces in i3. Each monitor has it's own set of workspaces, and referencing a workspace on one monitor will never activate a workspace on another monitor. The only i3 config change required is to set your existing workspace keybinds to `nop` - 
+### Execution Flow
+Lets assume that you have workspace 1 and 2 on monitor 1, workspace 6 and 7 on monitor 2, with monitor 2 focused, currently displaying workspace 7.
+You then press a keybind that requests to switch to workspace 1.
+
+This application will:
+ - Intercept the i3 command sent by your keybind -> "workspace 1" in this case
+ - Find the currently focused monitor -> "monitor 2"
+ - Calculate the index of the workspace that would be *considered* workspace 1 on that monitor -> "workspace 6"
+ - Alter the i3 command to switch to that workspace instead -> "i3-msg workspace 6"
+ - Execute the command
+ 
+This is an adaptation of the normal i3 behavior, which would have moved focus to monitor 1, then switched to workspace 1 if it was not already being displayed.
+
+The end result is an IPC implementation of monitor specific workspaces in i3.
+
+
+### Assumptions
+i3-MultiMonitor makes a few assumptions:
+
+ - Your i3 config workspace keybinds are set to `nop`
+ - There will only be 5 workspaces per monitor
+ - Your switch to workspace keybind *does not* include shift
+ - Your move window to workspace keybind *does* include shift
+ - When moving a window to a workspace, you do not intend to also switch to that workspace
+
+### Configuration Example
+~/.config/i3/config
 ```
 # switch to workspace
 bindsym $mod+1 nop
 bindsym $mod+2 nop
-...
-bindsym $mod+8 nop
-bindsym $mod+9 nop
 
 # move window to workspace
 bindsym $mod+Shift+1 nop
@@ -23,13 +47,9 @@ bindsym $mod+Shift+8 nop
 bindsym $mod+Shift+9 nop
 ```
 
-A full set of workspaces using i3-MultiMonitor would look something like this - 
-```
-Monitor 1 - 1, 2, 3, 4, 5, 6, 7, 8, 9
-Monitor 2 - 11,12,13,14,15,16,17,18,19
-```
-
-It is helpful, but not necessary to configure i3 to only allow certain workspaces on certain monitors.
+### Tips & Tricks
+#### Assign Workspaces To Monitors
+It may be helpful to configure i3 to assign workspaces to monitors, to prevent workspaces moving between monitors accidentally
 ```
 # Monitor 1 workspaces
 workspace 1 output primary
@@ -44,30 +64,4 @@ workspace 12 output nonprimary
 ...
 workspace 18 output nonprimary
 workspace 19 output nonprimary
-```
-
-For a fully seamless experience, it is possible to adjust the workspace widget of your bar application to display truncated values for the additional workspaces. Polybar example - 
-```
-[module/i3]
-type = internal/i3
-
-; Workspaces for monitor 1
-ws-icon-0 = 1;1
-ws-icon-1 = 2;2
-...
-ws-icon-8 = 8;8
-ws-icon-9 = 9;9
-
-; Workspaces for monitor 2
-ws-icon-10 = 11;1
-ws-icon-11 = 12;2
-...
-ws-icon-17 = 18;8
-ws-icon-18 = 19;9
-```
-
-This would allow for a full set of workspaces to look like this - 
-```
-Monitor 1 - 1, 2, 3, 4, 5, 6, 7, 8, 9
-Monitor 2 - 1, 2, 3, 4, 5, 6, 7, 8, 9
 ```
