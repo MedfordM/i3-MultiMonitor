@@ -3,12 +3,14 @@ A simple Rust application to adjust how the i3 window manager handles workspaces
 
 ## About
 i3-MultiMonitor implements the IPC api of the i3 window manager to intercept workspace related keybinds and adjust them to be monitor dependent.
+
 More specifically, it will intercept the workspace keybind sent by the user and replace the specified workspace with the i3 recognized workspace for the currently focused monitor.
 
 This enables the user to have one set of keybinds to interact with what is effectively an independent set of workspaces per monitor 
 
-### Execution Flow
+## Execution Flow
 Lets assume that you have workspace 1 and 2 on monitor 1, workspace 6 and 7 on monitor 2, with monitor 2 focused, currently displaying workspace 7.
+
 You then press a keybind that requests to switch to workspace 1.
 
 This application will:
@@ -22,8 +24,7 @@ This is an adaptation of the normal i3 behavior, which would have moved focus to
 
 The end result is an IPC implementation of monitor specific workspaces in i3.
 
-
-### Assumptions
+## Assumptions
 i3-MultiMonitor makes a few assumptions:
 
  - Your i3 config workspace keybinds are set to `nop`
@@ -32,7 +33,7 @@ i3-MultiMonitor makes a few assumptions:
  - Your move window to workspace keybind *does* include shift
  - When moving a window to a workspace, you do not intend to also switch to that workspace
 
-### Configuration Example
+## Configuration Example
 ~/.config/i3/config
 ```
 # switch to workspace
