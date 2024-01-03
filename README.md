@@ -14,10 +14,10 @@ Lets assume that you have workspace 1 and 2 on monitor 1, workspace 6 and 7 on m
 You then press a keybind that requests to switch to workspace 1.
 
 This application will:
- - Intercept the i3 command sent by your keybind -> "workspace 1" in this case
- - Find the currently focused monitor -> "monitor 2"
- - Calculate the index of the workspace that would be *considered* workspace 1 on that monitor -> "workspace 6"
- - Alter the i3 command to switch to that workspace instead -> "i3-msg workspace 6"
+ - Intercept the i3 command sent by your keybind > "workspace 1" in this case
+ - Find the currently focused monitor > "monitor 2"
+ - Calculate the workspace that would be *considered* workspace 1 on that monitor > "workspace 6"
+ - Alter the i3 command to switch to that workspace instead > "i3-msg workspace 6"
  - Execute the command
  
 This is an adaptation of the normal i3 behavior, which would have moved focus to monitor 1, then switched to workspace 1 if it was not already being displayed.
