@@ -2,7 +2,7 @@ extern crate i3ipc;
 
 use std::{process::Command, collections::HashMap};
 
-use i3ipc::{I3Connection, I3EventListener, Subscription, event::{Event, BindingEventInfo}, reply::Workspace};
+use i3ipc::{I3Connection, I3EventListener, Subscription, event::{Event, BindingEventInfo}};
 
 fn main() {
 
@@ -14,7 +14,6 @@ fn main() {
     listener.subscribe(&[Subscription::Binding]).unwrap();
 
     for event in listener.listen() {
-        println!("{:?}", event);
         match event.unwrap() {
             Event::ModeEvent(_) => todo!(),
             Event::WorkspaceEvent(_) => todo!(),
@@ -28,33 +27,32 @@ fn main() {
 }
 
 fn update_eww_workspaces(workspace: i32, monitor: String) {
-    let mut final_text = String::from("");
+    let mut workspace_text = String::from("");
+    workspace_text.push('"');
     for i in 1..6 {
         if i32::from(i) == workspace {
-            final_text.push('󰄯');
+            workspace_text.push('󰄯');
         } else {
-            final_text.push('󰄰');
+            workspace_text.push('󰄰');
         }
         if i != 5 {
-            final_text.push_str("  ");
+            workspace_text.push_str("  ");
         }
     }
-    println!("{}", final_text);
-    let mut command_string = String::from("eww update workspaces_");
-    command_string.push_str(&monitor);
-    command_string.push('=');
-    command_string.push('"');
-    command_string.push_str(final_text.as_str());
-    command_string.push('"');
-    println!("{}", command_string);
-    Command::new("sh").arg("-c").arg(command_string).output().ok();
+    workspace_text.push('"');
+    let mut command = String::from("eww update workspaces_");
+    command.push_str(&monitor);
+    command.push('=');
+    command.push_str(workspace_text.as_str());
+    println!("Executing eww command: {}", command);
+    Command::new("sh").arg("-c").arg(command).output().ok();
 }
 
 fn parse_workspace_monitor(connection: &mut I3Connection, binding: &BindingEventInfo) {
     let monitor_indexes: HashMap<String, i32> = HashMap::from([
         ("DP-4".to_string(), 1),
         ("DP-2".to_string(), 2),
-        ("HDMI-3".to_string(), 3)
+        ("HDMI-0".to_string(), 3)
     ]);
     
     let workspace_keys: HashMap<String, i32> = HashMap::from([
@@ -65,42 +63,29 @@ fn parse_workspace_monitor(connection: &mut I3Connection, binding: &BindingEvent
         ("d".to_string(), 5)
     ]);
 
-
     let workspaces = connection.get_workspaces().unwrap().workspaces;
     let active_monitor = &workspaces.iter().filter(|workspace| workspace.focused == true).next().unwrap().output;
     let active_monitor_index = monitor_indexes.get(active_monitor).unwrap();
     let key:String = binding.binding.symbol.as_ref().unwrap().to_string();
     let requested_space_index = workspace_keys.get(&key).unwrap().to_owned();
-    let requested_space = requested_space_index + (active_monitor_index * 5);
+    let requested_space = requested_space_index + ((active_monitor_index - 1) * 5);
+    // println!("Requested workspace was {:?} (index {:?}) on monitor {:?} (index {:?})", &requested_space, &requested_space_index, &active_monitor, &active_monitor_index);
 
-    let mods:&Vec<String> = &binding.binding.event_state_mask;
-    let workspaces_on_monitor: Vec<&Workspace> = workspaces.iter().filter(|workspace| workspace.output == active_monitor.to_owned()).collect();
-    let workspace_exists = workspaces.iter().any(|workspace| workspace.name == requested_space.to_string().to_owned());
-    let workspace_is_on_monitor = workspaces_on_monitor.iter().any(|workspace| workspace.name == requested_space.to_string().to_owned());
     let mut command:String;
 
-    println!("{:?}", &binding.binding);
+    let mods:&Vec<String> = &binding.binding.event_state_mask;
     if mods.contains(&String::from("shift")) {
         command = String::from("move container to workspace ");
     } else {
-        println!("User requested to switch to workspace {} on monitor {}", key, active_monitor);
         command = String::from("workspace ");
     }
 
-    println!("Workspaces on {}: {:?}", active_monitor, workspaces_on_monitor);
+    command.push_str(&requested_space.to_string());
 
-    if workspace_exists && workspace_is_on_monitor {
-        println!("Workspace exists and is on current monitor");
-        command.push_str(&requested_space.to_string());
-    }
-
-    let final_command = &command[..];
-
-    println!("Command: {}", final_command);
-    let result = connection.run_command(final_command);
-    println!("Result: {:?}", result);
+    println!("Executing i3 command: {}", command);
+    let result = connection.run_command(command.as_str());
 
     if result.is_ok() && !mods.contains(&String::from("shift")) {
-        update_eww_workspaces(requested_space, active_monitor_index.to_string());
+        update_eww_workspaces(requested_space_index, active_monitor_index.to_string());
     }
 }
