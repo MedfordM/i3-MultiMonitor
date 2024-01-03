@@ -27,16 +27,8 @@ fn main() {
     }
 }
 
-fn update_eww_workspaces(mut workspace: i32) {
+fn update_eww_workspaces(workspace: i32, monitor: String) {
     let mut final_text = String::from("");
-    let mut bar = '2';
-    println!("Workspace was: {}", workspace);
-    if workspace > i32::from(9) {
-        workspace -= 10; 
-        bar = '1';
-    }
-    println!("Workspace is: {}", workspace);
-    println!("Bar is: {}", bar);
     for i in 1..6 {
         if i32::from(i) == workspace {
             final_text.push('󰄯');
@@ -49,7 +41,7 @@ fn update_eww_workspaces(mut workspace: i32) {
     }
     println!("{}", final_text);
     let mut command_string = String::from("eww update workspaces_");
-    command_string.push(bar);
+    command_string.push_str(&monitor);
     command_string.push('=');
     command_string.push('"');
     command_string.push_str(final_text.as_str());
@@ -59,6 +51,12 @@ fn update_eww_workspaces(mut workspace: i32) {
 }
 
 fn parse_workspace_monitor(connection: &mut I3Connection, binding: &BindingEventInfo) {
+    let monitor_indexes: HashMap<String, i32> = HashMap::from([
+        ("DP-4".to_string(), 1),
+        ("DP-2".to_string(), 2),
+        ("HDMI-3".to_string(), 3)
+    ]);
+    
     let workspace_keys: HashMap<String, i32> = HashMap::from([
         ("a".to_string(), 1),
         ("r".to_string(), 2),
@@ -66,12 +64,16 @@ fn parse_workspace_monitor(connection: &mut I3Connection, binding: &BindingEvent
         ("t".to_string(), 4),
         ("d".to_string(), 5)
     ]);
-    let key:String = binding.binding.symbol.as_ref().unwrap().to_string();
-    let mut requested_space = workspace_keys.get(&key).unwrap().to_owned();
-    let mods:&Vec<String> = &binding.binding.event_state_mask;
+
 
     let workspaces = connection.get_workspaces().unwrap().workspaces;
     let active_monitor = &workspaces.iter().filter(|workspace| workspace.focused == true).next().unwrap().output;
+    let active_monitor_index = monitor_indexes.get(active_monitor).unwrap();
+    let key:String = binding.binding.symbol.as_ref().unwrap().to_string();
+    let requested_space_index = workspace_keys.get(&key).unwrap().to_owned();
+    let requested_space = requested_space_index + (active_monitor_index * 5);
+
+    let mods:&Vec<String> = &binding.binding.event_state_mask;
     let workspaces_on_monitor: Vec<&Workspace> = workspaces.iter().filter(|workspace| workspace.output == active_monitor.to_owned()).collect();
     let workspace_exists = workspaces.iter().any(|workspace| workspace.name == requested_space.to_string().to_owned());
     let workspace_is_on_monitor = workspaces_on_monitor.iter().any(|workspace| workspace.name == requested_space.to_string().to_owned());
@@ -90,19 +92,7 @@ fn parse_workspace_monitor(connection: &mut I3Connection, binding: &BindingEvent
     if workspace_exists && workspace_is_on_monitor {
         println!("Workspace exists and is on current monitor");
         command.push_str(&requested_space.to_string());
-    } else if workspace_exists {
-        println!("Workspace exists on another monitor");
-        requested_space += 10;
-        command.push_str(requested_space.to_string().as_str());
-    } else if workspaces_on_monitor.iter().next().unwrap().name.parse::<i32>().unwrap() >= 10 {
-        println!("Workspace does not exist, adding to second monitor");
-        requested_space += 10;
-        command.push_str(requested_space.to_string().as_str());
-    } else {
-        println!("Workspace does not exist, adding to first monitor");
-        command.push_str(&requested_space.to_string());
     }
-
 
     let final_command = &command[..];
 
@@ -111,6 +101,6 @@ fn parse_workspace_monitor(connection: &mut I3Connection, binding: &BindingEvent
     println!("Result: {:?}", result);
 
     if result.is_ok() && !mods.contains(&String::from("shift")) {
-        update_eww_workspaces(requested_space);
+        update_eww_workspaces(requested_space, active_monitor_index.to_string());
     }
 }
