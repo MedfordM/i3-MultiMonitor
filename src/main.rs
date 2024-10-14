@@ -50,9 +50,9 @@ fn update_eww_workspaces(workspace: i32, monitor: String) {
 
 fn parse_workspace_monitor(connection: &mut I3Connection, binding: &BindingEventInfo) {
     let monitor_indexes: HashMap<String, i32> = HashMap::from([
-        ("DP-4".to_string(), 1),
+        ("DP-0".to_string(), 1),
         ("DP-2".to_string(), 2),
-        ("HDMI-0".to_string(), 3)
+        ("DP-4".to_string(), 3)
     ]);
     
     let workspace_keys: HashMap<String, i32> = HashMap::from([
